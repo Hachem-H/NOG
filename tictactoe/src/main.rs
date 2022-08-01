@@ -6,6 +6,7 @@ use kernel::*;
 const BOARD_X: usize = 32;
 const BOARD_Y: usize = 7;
 
+#[allow(dead_code)]
 struct Application {
     pub board: [char; 3 * 3],
     pub current_player: u8,
@@ -77,8 +78,9 @@ impl Application {
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    let mut application = Application::new();
+    kernel::init();
 
+    let application = Application::new();
     application.draw_ui();
     application.draw_board();
 
