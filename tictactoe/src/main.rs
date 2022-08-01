@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use kernel;
+use kernel::*;
 
 const BOARD_X: usize = 32;
 const BOARD_Y: usize = 7;
@@ -79,8 +79,6 @@ impl Application {
 pub extern "C" fn _start() -> ! {
     let mut application = Application::new();
 
-    application.board = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
-
     application.draw_ui();
     application.draw_board();
 
@@ -88,6 +86,10 @@ pub extern "C" fn _start() -> ! {
 }
 
 #[panic_handler]
-pub fn panic(_: &core::panic::PanicInfo) -> ! {
+pub fn panic(info: &core::panic::PanicInfo) -> ! {
+    kernel::WRITER
+        .lock()
+        .set_color(ColorCode::new(Color::White, Color::Red));
+    kernel::print!("{}", info);
     loop {}
 }
