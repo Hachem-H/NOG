@@ -2,6 +2,8 @@ use crate::gdt;
 use crate::print;
 use crate::println;
 
+use crate::WRITER;
+
 use lazy_static::lazy_static;
 use x86_64::structures::idt::InterruptDescriptorTable;
 use x86_64::structures::idt::InterruptStackFrame;
@@ -59,8 +61,30 @@ extern "x86-interrupt" fn double_fault_handler(stack_frame: InterruptStackFrame,
     panic!("EXCEPTION: DOUBLE FAULT\n{:#?}", stack_frame);
 }
 
+static mut counter: i32 = 0;
 extern "x86-interrupt" fn timer_interrupt_handler(_: InterruptStackFrame) {
-    //print!(".");
+    unsafe {
+        WRITER.lock().write_char(
+            {
+                match counter % 10 {
+                    0 => '0',
+                    1 => '1',
+                    2 => '2',
+                    3 => '3',
+                    4 => '4',
+                    5 => '5',
+                    6 => '6',
+                    7 => '7',
+                    8 => '8',
+                    9 => '9',
+                    _ => '0',
+                }
+            },
+            0,
+            0,
+        );
+        counter += 1;
+    }
 
     unsafe {
         PICS.lock()
