@@ -63,13 +63,20 @@ impl Writer {
         }
     }
 
-    pub fn write(&mut self, string: &str, x: usize, y: usize) {
+    pub fn write_str(&mut self, string: &str, x: usize, y: usize) {
         for (i, &byte) in string.as_bytes().iter().enumerate() {
             self.buffer.chars[y][x + i] = ScreenChar {
                 ascii_character: byte,
                 color_code: self.color_code,
             };
         }
+    }
+
+    pub fn write_char(&mut self, data: char, x: usize, y: usize) {
+        self.buffer.chars[y][x] = ScreenChar {
+            ascii_character: data as u8,
+            color_code: self.color_code,
+        };
     }
 
     pub fn set_color(&mut self, color_code: ColorCode) {
