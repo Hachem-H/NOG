@@ -1,3 +1,5 @@
 #![no_std]
+#![feature(const_mut_refs)]
 
-pub fn some_func() {}
+pub mod writer;
+pub use writer::*;
