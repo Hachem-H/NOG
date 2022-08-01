@@ -80,11 +80,13 @@ impl Application {
 pub extern "C" fn _start() -> ! {
     kernel::init();
 
+    /*
     let application = Application::new();
     application.draw_ui();
     application.draw_board();
+    */
 
-    loop {}
+    kernel::hlt();
 }
 
 #[panic_handler]
@@ -93,5 +95,5 @@ pub fn panic(info: &core::panic::PanicInfo) -> ! {
         .lock()
         .set_color(ColorCode::new(Color::White, Color::Red));
     kernel::print!("{}", info);
-    loop {}
+    kernel::hlt();
 }
