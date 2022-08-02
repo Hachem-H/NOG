@@ -20,14 +20,14 @@ struct Vec2 {
 
 impl Vec2 {
     fn move_up(&mut self) {
-        if self.y > 1 {
+        if self.y > 0 {
             self.y -= 1;
         }
     }
 
     fn move_down(&mut self) {
         if <isize as TryInto<usize>>::try_into(self.y).unwrap() + PADDLE_HEIGHT
-            < kernel::BUFFER_HEIGHT - 1
+            < kernel::BUFFER_HEIGHT
         {
             self.y += 1;
         }
@@ -39,6 +39,8 @@ struct Application {
     left_paddle: Vec2,
     ball: Vec2,
     ball_vel: Vec2,
+    right_score: u8,
+    left_score: u8,
 }
 
 impl Application {
@@ -60,6 +62,38 @@ impl Application {
             },
 
             ball_vel: Vec2 { x: 1, y: 1 },
+
+            left_score: 0,
+            right_score: 0,
+        }
+    }
+
+    #[rustfmt::skip]
+    fn draw_win(&self, player: char, y: usize) {
+        kernel::WRITER.lock().write_str("|-----------------------------------------------------------|", 8, y+0);
+        kernel::WRITER.lock().write_str("|                                                           |", 8, y+1);
+        kernel::WRITER.lock().write_str("|                        _ won the game!                    |", 8, y+2);
+        kernel::WRITER.lock().write_str("|                                                           |", 8, y+3);
+        kernel::WRITER.lock().write_str("|-----------------------------------------------------------|", 8, y+4);
+
+        kernel::WRITER.lock().write_char(player, 33, y+2);
+    }
+
+    fn check_collisions(&mut self) {
+        if self.ball.x == LEFT_PADDLE_X.try_into().unwrap() {
+            for i in 0..PADDLE_HEIGHT {
+                if self.ball.y == self.left_paddle.y + i as isize {
+                    self.ball_vel.x *= -1;
+                }
+            }
+        }
+
+        if self.ball.x == RIGHT_PADDLE_X.try_into().unwrap() {
+            for i in 0..PADDLE_HEIGHT {
+                if self.ball.y == self.right_paddle.y + i as isize {
+                    self.ball_vel.x *= -1;
+                }
+            }
         }
     }
 
@@ -76,6 +110,46 @@ impl Application {
                 writer.write_char('|', kernel::BUFFER_WIDTH / 2, i);
             }
         }
+
+        writer.write_char(
+            {
+                match self.left_score {
+                    0 => '0',
+                    1 => '1',
+                    2 => '2',
+                    3 => '3',
+                    4 => '4',
+                    5 => '5',
+                    6 => '6',
+                    7 => '7',
+                    8 => '8',
+                    9 => '9',
+                    _ => '_',
+                }
+            },
+            0,
+            0,
+        );
+
+        writer.write_char(
+            {
+                match self.right_score {
+                    0 => '0',
+                    1 => '1',
+                    2 => '2',
+                    3 => '3',
+                    4 => '4',
+                    5 => '5',
+                    6 => '6',
+                    7 => '7',
+                    8 => '8',
+                    9 => '9',
+                    _ => '_',
+                }
+            },
+            kernel::BUFFER_WIDTH - 1,
+            0,
+        );
 
         writer.write_char(
             b'\xFE' as char,
@@ -103,9 +177,20 @@ impl Application {
         self.ball.x += self.ball_vel.x;
         self.ball.y += self.ball_vel.y;
 
-        if self.ball.x <= 0 || self.ball.x >= (kernel::BUFFER_WIDTH - 1).try_into().unwrap() {
-            self.ball_vel.x *= -1;
+        self.check_collisions();
+
+        if self.ball.x <= 0 {
+            self.ball.x = (kernel::BUFFER_WIDTH / 2) as isize;
+            self.ball.y = (kernel::BUFFER_HEIGHT / 2) as isize;
+            self.left_score += 1;
         }
+
+        if self.ball.x >= (kernel::BUFFER_WIDTH - 1).try_into().unwrap() {
+            self.ball.x = (kernel::BUFFER_WIDTH / 2) as isize;
+            self.ball.y = (kernel::BUFFER_HEIGHT / 2) as isize;
+            self.left_score += 1;
+        }
+
         if self.ball.y <= 0 || self.ball.y >= (kernel::BUFFER_HEIGHT - 1).try_into().unwrap() {
             self.ball_vel.y *= -1;
         }
@@ -134,6 +219,26 @@ pub extern "C" fn _start() -> ! {
         kernel::CLOCK_CALLBACK = Mutex::new(|| {
             let application = &mut APPLICATION.lock();
             application.update();
+
+            if application.right_score == 10 {
+                kernel::WRITER.lock().set_color(kernel::ColorCode::new(
+                    kernel::Color::White,
+                    kernel::Color::Black,
+                ));
+                kernel::WRITER.lock().clear();
+                application.draw_win('R', 10);
+                kernel::hlt();
+            }
+
+            if application.left_score == 10 {
+                kernel::WRITER.lock().set_color(kernel::ColorCode::new(
+                    kernel::Color::White,
+                    kernel::Color::Black,
+                ));
+                kernel::WRITER.lock().clear();
+                application.draw_win('L', 10);
+                kernel::hlt();
+            }
         });
     }
 

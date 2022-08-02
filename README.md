@@ -4,7 +4,7 @@ NOG, or No-OS-Games, is a collection of old retro games capable of running witho
 The first iteration of this project started off as a collection of bootsector games, where you could just assemble and boot the image, but that proved to be far more challenging than I first anticipated, so this what I decided to do instead as it is far easier since I am practically just writing terminal games in rust with a terminal interface. I must say, rust is certainly not my favorite language and stuff was extremely messy and quite hacky to say the least but I managed.
 
 - [x] TicTacToe
-- [ ] Pong
+- [x] Pong
 - [ ] Breakout
 
 _more games to come perhaps?_
@@ -36,9 +36,9 @@ $ qemu-system-x86_64 -s -drive format=raw,file="images/Breakout.bin"
 I canno't hide the fact that I am extremely proud of the fact that all these binary images can infact run on real hardware _(a fact which I have tested my self)_.  There is numerous ways to generate a bootable USB, you can use [balena Etcher](https://www.balena.io/etcher/) if you don't want to use the terminal or if you are on windows. Otherwise, we can use the `dd` unix utility to generate this easily for us.
 
 ```sh
-$ dd if=images/TicTacToe.bin of=/dev/[device] && sync
-$ dd if=images/Pong.bin of=/dev/[device] && sync
-$ dd if=images/Breakout.bin of=/dev/[device] && sync
+$ sudo dd if=images/TicTacToe.bin of=/dev/[device] && sync
+$ sudo dd if=images/Pong.bin of=/dev/[device] && sync
+$ sudo dd if=images/Breakout.bin of=/dev/[device] && sync
 ```
 
 ## Contribution
