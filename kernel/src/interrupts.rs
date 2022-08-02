@@ -5,6 +5,7 @@ use lazy_static::lazy_static;
 use x86_64::structures::idt::InterruptDescriptorTable;
 use x86_64::structures::idt::InterruptStackFrame;
 
+use pc_keyboard::KeyCode;
 use pic8259::ChainedPics;
 use spin::Mutex;
 
@@ -14,10 +15,10 @@ pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
 pub static PICS: Mutex<ChainedPics> =
     Mutex::new(unsafe { ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET) });
 
-pub type KeyFn = fn(character: char);
+pub type KeyFn = fn(character: char, key: KeyCode);
 pub type ClockFn = fn();
 
-pub static mut KEY_CALLBACK: Mutex<KeyFn> = Mutex::new(|_| {});
+pub static mut KEY_CALLBACK: Mutex<KeyFn> = Mutex::new(|_, _| {});
 pub static mut CLOCK_CALLBACK: Mutex<ClockFn> = Mutex::new(|| {});
 
 #[derive(Debug, Clone, Copy)]
@@ -89,8 +90,11 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_: InterruptStackFrame) {
     if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
         if let Some(key) = keyboard.process_keyevent(key_event) {
             match key {
+                DecodedKey::RawKey(key) => unsafe {
+                    (KEY_CALLBACK.lock())(0 as char, key);
+                },
                 DecodedKey::Unicode(character) => unsafe {
-                    (KEY_CALLBACK.lock())(character);
+                    (KEY_CALLBACK.lock())(character, KeyCode::Calculator);
                 },
                 _ => {}
             }

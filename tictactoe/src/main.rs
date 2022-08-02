@@ -160,21 +160,21 @@ pub extern "C" fn _start() -> ! {
     kernel::init();
 
     unsafe {
-        kernel::KEY_CALLBACK = spin::Mutex::new(|character| {
+        kernel::KEY_CALLBACK = spin::Mutex::new(|character, _| {
             let application = &mut APPLICATION.lock();
 
             if application.pos_x == 0 {
                 match character {
-                    '1' => application.pos_x = 1,
-                    '2' => application.pos_x = 2,
-                    '3' => application.pos_x = 3,
+                    '0' => application.pos_x = 1,
+                    '1' => application.pos_x = 2,
+                    '2' => application.pos_x = 3,
                     _ => {}
                 }
             } else if application.pos_x != 0 && application.pos_y == 0 {
                 match character {
-                    '1' => application.pos_y = 1,
-                    '2' => application.pos_y = 2,
-                    '3' => application.pos_y = 3,
+                    '0' => application.pos_y = 1,
+                    '1' => application.pos_y = 2,
+                    '2' => application.pos_y = 3,
                     _ => {}
                 }
 
