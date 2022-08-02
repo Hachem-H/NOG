@@ -1,21 +1,24 @@
 use crate::gdt;
-use crate::print;
 use crate::println;
-
-use crate::WRITER;
 
 use lazy_static::lazy_static;
 use x86_64::structures::idt::InterruptDescriptorTable;
 use x86_64::structures::idt::InterruptStackFrame;
 
 use pic8259::ChainedPics;
-use spin;
+use spin::Mutex;
 
 pub const PIC_1_OFFSET: u8 = 32;
 pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
 
-pub static PICS: spin::Mutex<ChainedPics> =
-    spin::Mutex::new(unsafe { ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET) });
+pub static PICS: Mutex<ChainedPics> =
+    Mutex::new(unsafe { ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET) });
+
+pub type KeyFn = fn(character: char);
+pub type ClockFn = fn();
+
+pub static mut KEY_CALLBACK: Mutex<KeyFn> = Mutex::new(|_| {});
+pub static mut CLOCK_CALLBACK: Mutex<ClockFn> = Mutex::new(|| {});
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
@@ -61,32 +64,9 @@ extern "x86-interrupt" fn double_fault_handler(stack_frame: InterruptStackFrame,
     panic!("EXCEPTION: DOUBLE FAULT\n{:#?}", stack_frame);
 }
 
-static mut counter: i32 = 0;
 extern "x86-interrupt" fn timer_interrupt_handler(_: InterruptStackFrame) {
     unsafe {
-        WRITER.lock().write_char(
-            {
-                match counter % 10 {
-                    0 => '0',
-                    1 => '1',
-                    2 => '2',
-                    3 => '3',
-                    4 => '4',
-                    5 => '5',
-                    6 => '6',
-                    7 => '7',
-                    8 => '8',
-                    9 => '9',
-                    _ => '0',
-                }
-            },
-            0,
-            0,
-        );
-        counter += 1;
-    }
-
-    unsafe {
+        (CLOCK_CALLBACK.lock())();
         PICS.lock()
             .notify_end_of_interrupt(InterruptIndex::Timer.as_u8());
     }
@@ -94,7 +74,6 @@ extern "x86-interrupt" fn timer_interrupt_handler(_: InterruptStackFrame) {
 
 extern "x86-interrupt" fn keyboard_interrupt_handler(_: InterruptStackFrame) {
     use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1};
-    use spin::Mutex;
     use x86_64::instructions::port::Port;
 
     lazy_static! {
@@ -110,8 +89,10 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_: InterruptStackFrame) {
     if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
         if let Some(key) = keyboard.process_keyevent(key_event) {
             match key {
-                DecodedKey::Unicode(character) => print!("{}", character),
-                DecodedKey::RawKey(key) => print!("{:?}", key),
+                DecodedKey::Unicode(character) => unsafe {
+                    (KEY_CALLBACK.lock())(character);
+                },
+                _ => {}
             }
         }
     }

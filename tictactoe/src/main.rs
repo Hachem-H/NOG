@@ -2,14 +2,20 @@
 #![no_main]
 
 use kernel::*;
+use spin::Mutex;
 
 const BOARD_X: usize = 32;
 const BOARD_Y: usize = 7;
+
+lazy_static::lazy_static! {
+    static ref APPLICATION: Mutex<Application> = Mutex::new(Application::new());
+}
 
 #[allow(dead_code)]
 struct Application {
     pub board: [char; 3 * 3],
     pub current_player: u8,
+    pub running: bool,
 }
 
 impl Application {
@@ -17,6 +23,7 @@ impl Application {
         Application {
             board: [' '; 3 * 3],
             current_player: 0,
+            running: true,
         }
     }
 
@@ -36,6 +43,7 @@ impl Application {
         kernel::WRITER.lock().write_str("in the form: x, y", 50, 10);
         kernel::WRITER.lock().write_str("  - with x/y between 1-3", 50, 10);
 
+        kernel::WRITER.lock().write_char(if self.current_player % 2 == 0 { 'x' } else { 'o' }, 17, 12);
     }
 
     fn draw_board(&self) {
@@ -80,11 +88,16 @@ impl Application {
 pub extern "C" fn _start() -> ! {
     kernel::init();
 
-    /*
-    let application = Application::new();
-    application.draw_ui();
-    application.draw_board();
-    */
+    unsafe {
+        kernel::KEY_CALLBACK = spin::Mutex::new(|_| {
+            APPLICATION.lock().current_player += 1;
+        });
+
+        kernel::CLOCK_CALLBACK = spin::Mutex::new(|| {
+            APPLICATION.lock().draw_ui();
+            APPLICATION.lock().draw_board();
+        });
+    }
 
     kernel::hlt();
 }
