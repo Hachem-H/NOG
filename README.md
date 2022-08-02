@@ -5,7 +5,7 @@ The first iteration of this project started off as a collection of bootsector ga
 
 - [x] TicTacToe
 - [x] Pong
-- [ ] Breakout
+- [x] Breakout
 
 _more games to come perhaps?_
 
