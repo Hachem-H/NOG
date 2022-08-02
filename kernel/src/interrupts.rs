@@ -96,7 +96,6 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_: InterruptStackFrame) {
                 DecodedKey::Unicode(character) => unsafe {
                     (KEY_CALLBACK.lock())(character, KeyCode::Calculator);
                 },
-                _ => {}
             }
         }
     }
