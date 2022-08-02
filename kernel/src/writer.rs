@@ -107,13 +107,23 @@ impl Writer {
                 let row = BUFFER_HEIGHT - 1;
                 let col = self.column_position;
 
-                let color_code = self.color_code;
                 self.buffer.chars[row][col].write(ScreenChar {
                     ascii_character: byte,
-                    color_code,
+                    color_code: self.color_code,
                 });
 
                 self.column_position += 1;
+            }
+        }
+    }
+
+    pub fn clear(&mut self) {
+        for row in 0..BUFFER_HEIGHT {
+            for col in 0..BUFFER_WIDTH {
+                self.buffer.chars[row][col].write(ScreenChar {
+                    ascii_character: ' ' as u8,
+                    color_code: self.color_code,
+                });
             }
         }
     }

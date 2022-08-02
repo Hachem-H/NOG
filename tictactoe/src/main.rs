@@ -15,7 +15,9 @@ lazy_static::lazy_static! {
 struct Application {
     pub board: [char; 3 * 3],
     pub current_player: u8,
-    pub running: bool,
+
+    pub pos_x: usize,
+    pub pos_y: usize,
 }
 
 impl Application {
@@ -23,17 +25,53 @@ impl Application {
         Application {
             board: [' '; 3 * 3],
             current_player: 0,
-            running: true,
+
+            pos_x: 0,
+            pos_y: 0,
         }
+    }
+
+    fn get_player(&self) -> char {
+        if self.current_player % 2 == 0 {
+            'x'
+        } else {
+            'o'
+        }
+    }
+
+    fn check_win(&self, player: char) -> bool {
+        for i in 0..3 {
+            if (self.board[i + 0 * 3] == self.board[i + 1 * 3]
+                && self.board[i + 0 * 3] == self.board[i + 2 * 3]
+                && self.board[i + 0 * 3] == player)
+                || (self.board[0 + i * 3] == self.board[1 + i * 3]
+                    && self.board[0 + i * 3] == self.board[2 + i * 3]
+                    && self.board[0 + i * 3] == player)
+            {
+                return true;
+            }
+        }
+
+        if (self.board[0 + 0 * 3] == self.board[1 + 1 * 3]
+            && self.board[0 + 0 * 3] == self.board[2 + 2 * 3]
+            && self.board[0 + 0 * 3] == player)
+            || (self.board[0 + 2 * 3] == self.board[1 + 1 * 3]
+                && self.board[0 + 2 * 3] == self.board[2 + 0 * 3]
+                && self.board[0 + 2 * 3] == player)
+        {
+            return true;
+        }
+
+        return false;
     }
 
     #[rustfmt::skip]
     fn draw_ui(&self) {
-        kernel::WRITER.lock().write_str(" _______ __        _______              _______              ", 8, 0,);
-        kernel::WRITER.lock().write_str("|_     _|__|.----.|_     _|.---.-.----.|_     _|.-----.-----.", 8, 1,);
-        kernel::WRITER.lock().write_str("  |   | |  ||  __|  |   |  |  _  |  __|  |   |  |  _  |  -__|", 8, 2,);
-        kernel::WRITER.lock().write_str("  |___| |__||____|  |___|  |___._|____|  |___|  |_____|_____|", 8, 3,);
-        kernel::WRITER.lock().write_str("                   === By Hachem H. ===                      ", 8, 4,);
+        kernel::WRITER.lock().write_str(" _______ __        _______              _______              ", 8, 0);
+        kernel::WRITER.lock().write_str("|_     _|__|.----.|_     _|.---.-.----.|_     _|.-----.-----.", 8, 1);
+        kernel::WRITER.lock().write_str("  |   | |  ||  __|  |   |  |  _  |  __|  |   |  |  _  |  -__|", 8, 2);
+        kernel::WRITER.lock().write_str("  |___| |__||____|  |___|  |___._|____|  |___|  |_____|_____|", 8, 3);
+        kernel::WRITER.lock().write_str("                   === By Hachem H. ===                      ", 8, 4);
         kernel::WRITER.lock().write_str("NOG collection @ https://github.com/hh-Naram/NOG", 0, 24);
 
         kernel::WRITER.lock().write_str("Current Player: ", 1, 12);
@@ -43,7 +81,18 @@ impl Application {
         kernel::WRITER.lock().write_str("in the form: x, y", 50, 10);
         kernel::WRITER.lock().write_str("  - with x/y between 1-3", 50, 10);
 
-        kernel::WRITER.lock().write_char(if self.current_player % 2 == 0 { 'x' } else { 'o' }, 17, 12);
+        kernel::WRITER.lock().write_char(self.get_player(), 17, 12);
+    }
+    
+    #[rustfmt::skip]
+    fn draw_win(&self, player: char, y: usize) {
+        kernel::WRITER.lock().write_str("|-----------------------------------------------------------|", 8, y+0);
+        kernel::WRITER.lock().write_str("|                                                           |", 8, y+1);
+        kernel::WRITER.lock().write_str("|                        _ Won the game!                    |", 8, y+2);
+        kernel::WRITER.lock().write_str("|                                                           |", 8, y+3);
+        kernel::WRITER.lock().write_str("|-----------------------------------------------------------|", 8, y+4);
+
+        kernel::WRITER.lock().write_char(player, 33, y+2);
     }
 
     fn draw_board(&self) {
@@ -79,8 +128,30 @@ impl Application {
             y += 4;
         }
 
-        kernel::WRITER.lock().write_char('_', x + 3, y + 1);
-        kernel::WRITER.lock().write_char('_', x + 5, y + 1);
+        kernel::WRITER.lock().write_char(
+            {
+                match self.pos_x {
+                    1 => '1',
+                    2 => '2',
+                    3 => '3',
+                    _ => '_',
+                }
+            },
+            x + 3,
+            y + 1,
+        );
+        kernel::WRITER.lock().write_char(
+            {
+                match self.pos_y {
+                    1 => '1',
+                    2 => '2',
+                    3 => '3',
+                    _ => '_',
+                }
+            },
+            x + 5,
+            y + 1,
+        );
     }
 }
 
@@ -89,13 +160,52 @@ pub extern "C" fn _start() -> ! {
     kernel::init();
 
     unsafe {
-        kernel::KEY_CALLBACK = spin::Mutex::new(|_| {
-            APPLICATION.lock().current_player += 1;
+        kernel::KEY_CALLBACK = spin::Mutex::new(|character| {
+            let application = &mut APPLICATION.lock();
+
+            if application.pos_x == 0 {
+                match character {
+                    '1' => application.pos_x = 1,
+                    '2' => application.pos_x = 2,
+                    '3' => application.pos_x = 3,
+                    _ => {}
+                }
+            } else if application.pos_x != 0 && application.pos_y == 0 {
+                match character {
+                    '1' => application.pos_y = 1,
+                    '2' => application.pos_y = 2,
+                    '3' => application.pos_y = 3,
+                    _ => {}
+                }
+
+                let pos_x = application.pos_x.clone() - 1;
+                let pos_y = application.pos_y.clone() - 1;
+
+                if application.board[pos_x + pos_y * 3] == ' ' {
+                    application.board[pos_x + pos_y * 3] = application.get_player();
+                    application.current_player += 1;
+                }
+
+                application.pos_x = 0;
+                application.pos_y = 0;
+            }
         });
 
         kernel::CLOCK_CALLBACK = spin::Mutex::new(|| {
-            APPLICATION.lock().draw_ui();
-            APPLICATION.lock().draw_board();
+            let application = &mut APPLICATION.lock();
+
+                application.draw_ui();
+                application.draw_board();
+
+            if application.check_win('x') {
+                kernel::WRITER.lock().clear();
+                application.draw_win('x', 10);
+                kernel::hlt();
+            } else if application.check_win('o') {
+                kernel::WRITER.lock().clear();
+                application.draw_win('o', 10);
+                kernel::hlt();
+            }
         });
     }
 
