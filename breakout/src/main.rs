@@ -70,7 +70,6 @@ impl Application {
     // NOTE(Hachem): there is no to string cause its in the std, so I have to do this
     //               God help me...
     fn score_to_text(&self) -> &str {
-        #[allow(unreachable_patterns)]
         match self.score {
             0 => "0",
             1 => "1",
@@ -110,12 +109,6 @@ impl Application {
             34 => "34",
             35 => "35",
             36 => "36",
-            21 => "21",
-            22 => "22",
-            23 => "23",
-            24 => "24",
-            25 => "25",
-            26 => "26",
             _ => " ",
         }
     }
