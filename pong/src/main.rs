@@ -182,7 +182,7 @@ impl Application {
         if self.ball.x <= 0 {
             self.ball.x = (kernel::BUFFER_WIDTH / 2) as isize;
             self.ball.y = (kernel::BUFFER_HEIGHT / 2) as isize;
-            self.left_score += 1;
+            self.right_score += 1;
         }
 
         if self.ball.x >= (kernel::BUFFER_WIDTH - 1).try_into().unwrap() {
