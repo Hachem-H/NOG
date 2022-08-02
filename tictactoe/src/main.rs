@@ -165,16 +165,16 @@ pub extern "C" fn _start() -> ! {
 
             if application.pos_x == 0 {
                 match character {
-                    '0' => application.pos_x = 1,
-                    '1' => application.pos_x = 2,
-                    '2' => application.pos_x = 3,
+                    '1' => application.pos_x = 1,
+                    '2' => application.pos_x = 2,
+                    '3' => application.pos_x = 3,
                     _ => {}
                 }
             } else if application.pos_x != 0 && application.pos_y == 0 {
                 match character {
-                    '0' => application.pos_y = 1,
-                    '1' => application.pos_y = 2,
-                    '2' => application.pos_y = 3,
+                    '1' => application.pos_y = 1,
+                    '2' => application.pos_y = 2,
+                    '3' => application.pos_y = 3,
                     _ => {}
                 }
 
