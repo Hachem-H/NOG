@@ -10,25 +10,13 @@ The first iteration of this project started off as a collection of bootsector ga
 _more games to come perhaps?_
 
 ## Building and running the games
-
-As I said, this project relies on quite a couple of external dependencies, so we have to set them up before hand. This is relatively easy using a combination of `cargo ` and `rustup` commands which are self-explanatory.
-
-```sh
-$ rustup override set nightly
-$ rustup component add llvm-tools-preview
-$ cargo install bootimage
-```
-
-The included `build.sh` is responsible to build and generate the image in a newly created `images` folder, in there a collection of `.bin` files will be located. Those are the bootable game images, each named according to the game it self.
+Since cargo have scripts which they can read from, everything is already taken care of for you so all we have to do is run the following commands:
 
 ```sh
-# Compile/Build image
-$ sh build.sh
-
-# Running the game image in QEMU
-$ qemu-system-x86_64 -s -drive format=raw,file="images/TicTacToe.bin"
-$ qemu-system-x86_64 -s -drive format=raw,file="images/Pong.bin"
-$ qemu-system-x86_64 -s -drive format=raw,file="images/Breakout.bin"
+# Run in QEMU
+$ cargo run --release -p tictactoe 
+$ cargo run --release -p pong 
+$ cargo run --release -p breakout 
 ```
 
 ## Running on real hardware
@@ -36,9 +24,13 @@ $ qemu-system-x86_64 -s -drive format=raw,file="images/Breakout.bin"
 I canno't hide the fact that I am extremely proud of the fact that all these binary images can infact run on real hardware _(a fact which I have tested my self)_.  There is numerous ways to generate a bootable USB, you can use [balena Etcher](https://www.balena.io/etcher/) if you don't want to use the terminal or if you are on windows. Otherwise, we can use the `dd` unix utility to generate this easily for us.
 
 ```sh
-$ sudo dd if=images/TicTacToe.bin of=/dev/[device] && sync
-$ sudo dd if=images/Pong.bin of=/dev/[device] && sync
-$ sudo dd if=images/Breakout.bin of=/dev/[device] && sync
+# Compile and flash to device
+$ cargo bootimage --release -p tictactoe && sudo dd if=target/target/release/bootimage-tictactoe.bin of=/dev/[device]
+$ cargo bootimage --release -p pong      && sudo dd if=target/target/release/bootimage-pong.bin of=/dev/[device]
+$ cargo bootimage --release -p breakout  && sudo dd if=target/target/release/bootimage-breakout.bin of=/dev/[device]
+
+# When you are done
+$ sync
 ```
 
 ## Contribution
